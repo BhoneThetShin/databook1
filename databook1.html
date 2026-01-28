@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ကထာသလ္လာပသိက္ခာ</title>
+<style>
+/* Base Styles */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Pyidaungsu", "Noto Sans Myanmar", sans-serif; }
+:root {
+--primary-color: #e91e63;
+--text-color: #333;
+--bg-color: #f0f2f5;
+--page-bg: #ffffff;
+--toolbar-bg: #9E9E9E;
+}
+
+body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; transition: 0.3s; }
+body.night-mode { --bg-color: #121212; --page-bg: #1e1e1e; --text-color: #e0e0e0; }
+body.font-zawgyi * { font-family: "Zawgyi-One", sans-serif !important; }
+
+/* Viewpager Toolbar */
+.top-toolbar { height: 56px; background-color: var(--toolbar-bg); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; color: white; position: fixed; top: 0; width: 100%; z-index: 100; }
+.toolbar-left { display: flex; align-items: center; gap: 15px; }
+.star-btn { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; outline: none; transition: 0.2s; }
+.star-btn.active { color: #ffeb3b; transform: scale(1.2); }
+
+/* ViewPager */
+.viewpager { width: 100vw; height: calc(100vh - 116px); margin-top: 56px; display: flex; overflow-x: scroll; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+.page { min-width: 100vw; height: 100%; scroll-snap-align: start; padding: 20px; overflow-y: auto; line-height: 1.8; background-color: var(--page-bg); text-align: justify; }
+
+/* Highlights */
+.text-highlight { background-color: #ffeb3b; color: #000; font-weight: bold; padding: 0 2px; border-radius: 3px; }
+.list-highlight { background-color: #ffeb3b; color: #000; font-weight: bold; padding: 0 2px; }
+
+/* Dialog Overlay */
+.dialog-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--page-bg); z-index: 1000; flex-direction: column; }
+.header-toolbar { height: 56px; background: var(--toolbar-bg); display: flex; align-items: center; padding: 0 15px; color: white; }
+.header-toolbar h3 { flex: 1; text-align: center; }
+.close-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; }
+
+/* Settings */
+.settings-content { padding: 20px; overflow-y: auto; flex: 1; }
+.setting-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
+body.night-mode .setting-card { background: #333; border-color: #444; }
+.setting-title { color: var(--primary-color); margin-bottom: 15px; font-weight: bold; }
+.radio-item { margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; padding-left: 20%; }
+.radio-item input { margin-right: 10px; accent-color: var(--primary-color); transform: scale(1.3); }
+
+/* Bottom Bar */
+.bottom-controls { position: fixed; bottom: 0; width: 100%; height: 60px; background: var(--toolbar-bg); display: flex; align-items: center; padding: 0 15px; }
+.seebar { flex: 1; height: 6px; background: white; margin: 0 15px; border-radius: 3px; position: relative; touch-action: none; cursor: pointer; }
+.seebar-progress { height: 100%; background: #e74c3c; width: 0%; border-radius: 3px; }
+
+.page-indicator-circle { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); width: 65px; height: 65px; background: #3498db; color: white; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 1.4rem; font-weight: bold; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+.photo-bottom-sheet { position: fixed; bottom: 60px; width: 100%; background: var(--page-bg); display: grid; grid-template-columns: repeat(4, 1fr); padding: 20px 10px; transform: translateY(150%); transition: 0.4s ease; z-index: 9; border-radius: 20px 20px 0 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+.photo-bottom-sheet.active { transform: translateY(0); }
+.feature-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 0.8rem; text-align: center; }
+.icon-circle { width: 50px; height: 50px; border-radius: 50%; border: 1px solid #777; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; font-size: 1.2rem; }
+
+/* List Styles */
+ul { list-style: none; overflow-y: auto; flex: 1; }
+ul li { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+body.night-mode ul li { border-bottom: 1px solid #333; }
+.bookmark-text { font-size: 0.9rem; color: #777; margin-top: 5px; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body.night-mode .bookmark-text { color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="top-toolbar">
+<div class="toolbar-left">
+<button onclick="exitNow()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">⇱</button>
+<div style="font-weight: bold; font-size: 1.1rem;">ကထာသလ္လာပသိက္ခာ</div>
+</div>
+<button class="star-btn" id="starBtn" onclick="toggleBookmark()">★</button>
+</div>
+
+<div class="dialog-overlay" id="settingsDialog">
+<div class="header-toolbar"><button class="close-btn" onclick="closeSettings()">⇱</button><h3>အပြင်အဆင်</h3></div>
+<div class="settings-content">
+<div class="setting-card">
+<div class="setting-title">အရောင်အသွင်အပြင်</div>
+<label class="radio-item"><input type="radio" name="theme" id="themeDay" checked onchange="setTheme('day')"> နေ့ (နောက်ခံအဖြူ စာလုံးမဲ)</label>
+<label class="radio-item"><input type="radio" name="theme" id="themeNight" onchange="setTheme('night')"> ည (နောက်ခံအမဲ စာလုံးဖြူ)</label>
+</div>
+<div class="setting-card">
+<div class="setting-title">ဖောင့် (Font)</div>
+<label class="radio-item"><input type="radio" name="font" id="fontZawgyi" onchange="setFont('zawgyi')"> ဇော်ဂျီ</label>
+<label class="radio-item"><input type="radio" name="font" id="fontUnicode" checked onchange="setFont('unicode')"> ယူနီကုဒ်</label>
+</div>
+<div style="text-align: center; margin-bottom: 20px;">
+<label style="cursor:pointer;"><input type="checkbox" id="lineBreakToggle" onchange="saveFixState()"> Fix Line Breaking For Zawgyi Font</label>
+</div>
+<div class="setting-card">
+<div class="setting-title">စာလုံးအရွယ်အစား</div>
+<div style="display:flex; justify-content:space-between; font-size:12px; color:#888; margin-top:5px;"><span>အသေး</span><span>အလတ်</span><span>အကြီး</span></div>
+<input type="range" min="0.9" max="1.8" step="0.05" id="fontSizeSlider" style="width: 90%; accent-color: var(--primary-color);">
+<div id="previewText" style="margin-top:20px;">နမူနာစာသား</div>
+</div>
+</div>
+</div>
+
+<div class="dialog-overlay" id="aboutDialog">
+<div class="header-toolbar"><button class="close-btn" onclick="closeAbout()">⇱</button><h3>အကြောင်းအရာ</h3></div>
+<div style="padding: 20px;">ဤကထာသလ္လာပသိက္ခာ App သည် နေ့စဉ်သုံးစကားပြောဆိုမှုများကို လွယ်ကူစွာ လေ့လာနိုင်ရန် ရည်ရွယ်ထုတ်လုပ်ထားပါသည်။</div>
+</div>
+
+<div class="dialog-overlay" id="bookmarkDialog">
+<div class="header-toolbar"><button class="close-btn" onclick="closeBookmark()">⇱</button><h3>မှတ်သားချက်များ</h3></div>
+<ul id="bookmarkList"></ul>
+</div>
+
+<div class="dialog-overlay" id="menuDialog">
+<div class="header-toolbar"><button class="close-btn" onclick="closeMenu()">⇱</button><h3>မာတိကာ</h3></div>
+<ul id="menuList">
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="0">၁။ ဥယျောဇနကထာ</li>
+<li data-page-index="0">၂။ ပစ္စူသသမယေ</li>
+<li data-page-index="1">၃။ သယနာ ဝုဋ္ဌိတကာလေ</li>
+<li data-page-index="3">၄။ ဥဒကဝဍ္ဎနကထာ</li>
+<li data-page-index="3">၅။ ဥဒကဝဍ္ဎနကထာ</li>
+</ul>
+</div>
+
+<div class="dialog-overlay" id="searchDialog">
+<div class="header-toolbar">
+<input type="text" id="searchInput" placeholder="ရှာရန်..." style="flex:1; padding:10px; border-radius:25px; border:none; outline:none;">
+<button class="close-btn" onclick="closeSearch()">×</button>
+</div>
+<div id="searchStatus" style="background:#9E9E9E; color:white; text-align:center; padding:5px; display:none;"></div>
+<ul id="searchResults"></ul>
+</div>
+
+<div class="viewpager" id="viewpager">
+<div class="page"><p>၁။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၂။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၃။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၄။</p> </div>
+<div class="page"><p>၅။</p> </div>
+<div class="page"><p>၆။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၇။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၈။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၉။</p> </div>
+<div class="page"><p>၁၀။</p> </div>
+<div class="page"><p>၁၁။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၁၂။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၁၃။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၁၄။</p> </div>
+<div class="page"><p>၁၅။</p> </div>
+<div class="page"><p>၁၆။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၁၇။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၁၈။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၁၉။</p> </div>
+<div class="page"><p>၂၀။</p> </div>
+<div class="page"><p>၂၁။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၂၂။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၂၃။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၂၄။</p> </div>
+<div class="page"><p>၂၅။</p> </div>
+<div class="page"><p>၂၆။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၂၇။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၂၈။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၂၉။</p> </div>
+<div class="page"><p>၃၀။</p> </div>
+<div class="page"><p>၃၁။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၃၂။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၃၃။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၃၄။</p> </div>
+<div class="page"><p>၃၅။</p> </div>
+<div class="page"><p>၃၆။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၃၇။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၃၈။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၃၉။</p> </div>
+<div class="page"><p>၄၀။</p> </div>
+<div class="page"><p>၄၁။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၄၂။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၄၃။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၄၄။</p> </div>
+<div class="page"><p>၄၅။</p> </div>
+<div class="page"><p>၄၆။ ဥယျောဇနကထာ စာသားများ...</p></div>
+<div class="page"><p>၄၇။ ပစ္စူသသမယေ စာသားများ...</p></div>
+<div class="page"><p>၄၈။ သယနာ ဝုဋ္ဌိတကာလေ စာသားများ...</p></div>
+<div class="page"><p>၄၉။</p> </div>
+<div class="page"><p>၅၀။</p> </div>
+</div>
+
+<div class="page-indicator-circle" id="pageIndicatorCircle">၁</div>
+
+<div class="photo-bottom-sheet" id="photoBottomSheet">
+<div class="feature-item" onclick="openAbout()"><div class="icon-circle">ℹ️</div>အကြောင်း</div>
+<div class="feature-item" onclick="openSettings()"><div class="icon-circle">⚙️</div>ပြင်ဆင်</div>
+<div class="feature-item" onclick="openBookmark()"><div class="icon-circle">⭐</div>မှတ်သား</div>
+<div class="feature-item" onclick="openMenu()"><div class="icon-circle">≡</div>မာတိကာ</div>
+</div>
+
+<div class="bottom-controls">
+<button onclick="openSearch()" style="background:none; border:none; color:white; font-size:1.3rem; cursor:pointer;">➤</button>
+<div class="seebar" id="seebar"><div class="seebar-progress" id="seebarProgress"></div></div>
+<button onclick="toggleFeatureSheet()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">☰</button>
+</div>
+
+<script src="data book.js"></script>
+</body>
+</html>
